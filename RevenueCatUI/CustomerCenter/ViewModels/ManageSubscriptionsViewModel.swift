@@ -26,6 +26,7 @@ import RevenueCat
 class ManageSubscriptionsViewModel: ObservableObject {
 
     let screen: CustomerCenterConfigData.Screen
+    let appearance: CustomerCenterConfigData.Appearance
 
     @Published
     var showRestoreAlert: Bool = false
@@ -66,25 +67,31 @@ class ManageSubscriptionsViewModel: ObservableObject {
 
     private var error: Error?
 
-    convenience init(screen: CustomerCenterConfigData.Screen) {
+    convenience init(screen: CustomerCenterConfigData.Screen,
+                     appearance: CustomerCenterConfigData.Appearance) {
         self.init(screen: screen,
+                  appearance: appearance,
                   purchasesProvider: ManageSubscriptionPurchases(),
                   promotionalOfferViewModel: PromotionalOfferViewModel())
     }
 
     // @PublicForExternalTesting
     init(screen: CustomerCenterConfigData.Screen,
+         appearance: CustomerCenterConfigData.Appearance,
          purchasesProvider: ManageSubscriptionsPurchaseType,
          promotionalOfferViewModel: PromotionalOfferViewModel) {
         self.state = .notLoaded
         self.screen = screen
+        self.appearance = appearance
         self.purchasesProvider = purchasesProvider
         self.promotionalOfferViewModel = promotionalOfferViewModel
     }
 
     init(screen: CustomerCenterConfigData.Screen,
+         appearance: CustomerCenterConfigData.Appearance,
          subscriptionInformation: SubscriptionInformation) {
         self.screen = screen
+        self.appearance = appearance
         self.subscriptionInformation = subscriptionInformation
         self.purchasesProvider = ManageSubscriptionPurchases()
         self.promotionalOfferViewModel = PromotionalOfferViewModel()
@@ -125,22 +132,9 @@ class ManageSubscriptionsViewModel: ObservableObject {
         )
     }
 
-    #if os(iOS) || targetEnvironment(macCatalyst)
-    func determineFlow(for path: CustomerCenterConfigData.HelpPath) async {
-        if case let .feedbackSurvey(feedbackSurvey) = path.detail {
-            self.feedbackSurveyData = FeedbackSurveyData(configuration: feedbackSurvey) { [weak self] in
-                Task {
-                    await self?.performAction(for: path)
-                }
-            }
-        } else {
-            await self.performAction(for: path)
-        }
-    }
-
-    func handleSheetDismiss() {
+    func handleSheetDismiss() async {
         if let loadingPath = loadingPath {
-            performAction(for: loadingPath)
+            await self.performAction(for: loadingPath)
             self.loadingPath = nil
         }
     }
@@ -150,14 +144,16 @@ class ManageSubscriptionsViewModel: ObservableObject {
         switch path.detail {
         case let .feedbackSurvey(feedbackSurvey):
             self.feedbackSurveyData = FeedbackSurveyData(configuration: feedbackSurvey) { [weak self] in
-                await self?.performAction(for: path)
+                Task {
+                    await self?.performAction(for: path)
+                }
             }
         case let .promotionalOffer(promotionalOffer):
             self.loadingPath = path
             await promotionalOfferViewModel.loadPromo(promotionalOfferId: promotionalOffer.iosOfferId)
             self.isShowingPromotionalOffer = true
         default:
-            performAction(for: path)
+            await self.performAction(for: path)
         }
     }
     #endif

@@ -31,8 +31,9 @@ struct ManageSubscriptionsView: View {
     @StateObject
     private var viewModel: ManageSubscriptionsViewModel
 
-    init(screen: CustomerCenterConfigData.Screen) {
-        let viewModel = ManageSubscriptionsViewModel(screen: screen)
+    init(screen: CustomerCenterConfigData.Screen,
+         appearance: CustomerCenterConfigData.Appearance) {
+        let viewModel = ManageSubscriptionsViewModel(screen: screen, appearance: appearance)
         self._viewModel = .init(wrappedValue: viewModel)
     }
 
@@ -63,7 +64,8 @@ struct ManageSubscriptionsView: View {
 
                 if let feedbackSurveyData = self.viewModel.feedbackSurveyData {
                     NavigationLink(
-                        destination: FeedbackSurveyView(feedbackSurveyData: feedbackSurveyData)
+                        destination: FeedbackSurveyView(feedbackSurveyData: feedbackSurveyData,
+                                                        appearance: self.viewModel.appearance)
                             .onDisappear {
                                 self.viewModel.feedbackSurveyData = nil
                             },
@@ -204,15 +206,18 @@ struct ManageSubscriptionButton: View {
         }
         .restorePurchasesAlert(isPresented: self.$viewModel.showRestoreAlert)
         .sheet(isPresented: self.$viewModel.isShowingPromotionalOffer, onDismiss: {
-            self.viewModel.handleSheetDismiss()
+            Task {
+                await self.viewModel.handleSheetDismiss()
+            }
         }, content: {
             if let promotionalOffer = self.viewModel.promotionalOffer,
                let product = self.viewModel.product {
                 PromotionalOfferView(promotionalOffer: promotionalOffer,
-                                     product: product)
+                                     product: product,
+                                     appearance: self.viewModel.appearance)
             }
         })
-        .buttonStyle(ManageSubscriptionsButtonStyle())
+        .buttonStyle(ManageSubscriptionsButtonStyle(appearance: self.viewModel.appearance))
         .disabled(self.viewModel.loadingPath?.id == path.id)
     }
 }
@@ -229,6 +234,7 @@ struct ManageSubscriptionsView_Previews: PreviewProvider {
     static var previews: some View {
         let viewModel = ManageSubscriptionsViewModel(
             screen: CustomerCenterConfigTestData.customerCenterData[.management]!,
+            appearance: CustomerCenterConfigTestData.customerCenterData.appearance,
             subscriptionInformation: CustomerCenterConfigTestData.subscriptionInformation)
         ManageSubscriptionsView(viewModel: viewModel)
     }
