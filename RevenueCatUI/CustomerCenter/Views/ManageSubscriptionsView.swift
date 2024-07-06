@@ -27,15 +27,21 @@ struct ManageSubscriptionsView: View {
 
     @StateObject
     private var viewModel: ManageSubscriptionsViewModel
+    @ObservedObject
+    private var completionHandler: CustomerCenterCompletionHandler
 
     init(screen: CustomerCenterConfigData.Screen,
-         appearance: CustomerCenterConfigData.Appearance) {
+         appearance: CustomerCenterConfigData.Appearance,
+         completionHandler: CustomerCenterCompletionHandler) {
         let viewModel = ManageSubscriptionsViewModel(screen: screen, appearance: appearance)
         self._viewModel = .init(wrappedValue: viewModel)
+        self._completionHandler = .init(initialValue: completionHandler)
     }
 
-    fileprivate init(viewModel: ManageSubscriptionsViewModel) {
+    fileprivate init(viewModel: ManageSubscriptionsViewModel,
+                     completionHandler: CustomerCenterCompletionHandler) {
         self._viewModel = .init(wrappedValue: viewModel)
+        self._completionHandler = .init(initialValue: completionHandler)
     }
 
     var body: some View {
@@ -52,6 +58,7 @@ struct ManageSubscriptionsView: View {
                     Spacer()
 
                     ManageSubscriptionsButtonsView(viewModel: self.viewModel,
+                                                   completionHandler: self.completionHandler,
                                                    loadingPath: self.$viewModel.loadingPath)
 
                 } else {
@@ -161,6 +168,8 @@ struct ManageSubscriptionsButtonsView: View {
 
     @ObservedObject
     var viewModel: ManageSubscriptionsViewModel
+    @ObservedObject
+    var completionHandler: CustomerCenterCompletionHandler
     @Binding
     var loadingPath: CustomerCenterConfigData.HelpPath?
     @Environment(\.openURL)
@@ -182,6 +191,7 @@ struct ManageSubscriptionsButtonsView: View {
                 Task {
                     openURL(URLUtilities.createMailURL()!)
                 }
+                completionHandler.supportContacted()
             }
             .padding()
         }
@@ -241,7 +251,7 @@ struct ManageSubscriptionsView_Previews: PreviewProvider {
             screen: CustomerCenterConfigTestData.customerCenterData[.management]!,
             appearance: CustomerCenterConfigTestData.customerCenterData.appearance,
             subscriptionInformation: CustomerCenterConfigTestData.subscriptionInformation)
-        ManageSubscriptionsView(viewModel: viewModel)
+        ManageSubscriptionsView(viewModel: viewModel, completionHandler: .default())
     }
 
 }
