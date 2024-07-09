@@ -151,10 +151,12 @@ extension PaywallData {
 extension View {
 
     func adaptTemplateView(with configuration: TemplateViewConfiguration) -> some View {
-        self
-            .background(configuration.backgroundView)
-            .adjustColorScheme(with: configuration)
-            .adjustSize(with: configuration.mode)
+        ZStack {
+            configuration.backgroundView
+            self.frame(maxWidth: UIViewController().view.readableContentGuide.layoutFrame.size.width, maxHeight: .infinity)
+        }
+        .adjustColorScheme(with: configuration)
+        .adjustSize(with: configuration.mode)
     }
 
     @ViewBuilder
