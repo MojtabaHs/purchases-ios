@@ -144,6 +144,7 @@ struct BackgroundedTemplateView: ViewModifier {
     func body(content: Content) -> some View {
         ZStack {
             configuration.backgroundView
+                .frame(minWidth: 0, maxWidth: .infinity)
             content
         }
     }
