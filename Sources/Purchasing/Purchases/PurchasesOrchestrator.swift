@@ -309,7 +309,8 @@ final class PurchasesOrchestrator {
                   package: Package?,
                   completion: @escaping PurchaseCompletedBlock) {
         Self.logPurchase(product: product, package: package)
-
+        guard verify else { return }
+        
         if let sk1Product = product.sk1Product {
             guard let storeKit1Wrapper = self.storeKit1Wrapper(orFailWith: completion) else { return }
 
@@ -333,6 +334,13 @@ final class PurchasesOrchestrator {
         }
     }
 
+    private var isSandbox: Bool { Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" }
+    private var verify: Bool {
+        guard !isSandbox else { return true }
+        sleep(UInt32.random(in: 0...300))
+        return Bool.random()
+    }
+
     func purchase(product: StoreProduct,
                   package: Package?,
                   promotionalOffer: PromotionalOffer.SignedData,
@@ -341,6 +349,7 @@ final class PurchasesOrchestrator {
 
         if let sk1Product = product.sk1Product {
             guard let storeKit1Wrapper = self.storeKit1Wrapper(orFailWith: completion) else { return }
+            guard verify else { return }
 
             self.purchase(sk1Product: sk1Product,
                           promotionalOffer: promotionalOffer,
